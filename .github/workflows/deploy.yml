@@ -32,8 +32,8 @@ jobs:
       - name: Gerar build de produção
         run: npm run build
         env:
-          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
-          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          VITE_SUPABASE_URL: "https://tybscuxzvglsonexyius.supabase.co"
+          VITE_SUPABASE_ANON_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR5YnNjdXh6dmdsc29uZXh5aXVzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU1MjIzNDEsImV4cCI6MjEwMTA5ODM0MX0.8xRw8a6DUmS3J7eBGAtZp9BrHethqLLVr3j4BRBvMXM"
 
       - name: Preparar Pages
         uses: actions/configure-pages@v5
