@@ -9,7 +9,6 @@ interface AuthContextValue {
   user: User | null;
   loading: boolean;
   signInWithGoogle: () => Promise<void>;
-  signInWithGithub: () => Promise<void>;
   signOut: () => Promise<void>;
 }
 
@@ -63,15 +62,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   async function signInWithGoogle() {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
-      options: { redirectTo: window.location.origin },
-    });
-    if (error) throw error;
-  }
-
-  async function signInWithGithub() {
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "github",
-      options: { redirectTo: window.location.origin },
+      options: {
+        redirectTo: window.location.origin + import.meta.env.BASE_URL,
+      },
     });
     if (error) throw error;
   }
@@ -83,7 +76,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ session, user, loading, signInWithGoogle, signInWithGithub, signOut }}
+      value={{ session, user, loading, signInWithGoogle, signOut }}
     >
       {children}
     </AuthContext.Provider>
