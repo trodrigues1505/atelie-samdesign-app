@@ -84,4 +84,34 @@ export const userRepository = {
     if (error) throw error;
     return data;
   },
+
+  /**
+   * Lista todos os usuários (clientes e admins). Só retorna dados de fato
+   * se quem chamar for admin — a RLS bloqueia o resto.
+   */
+  async listAll(): Promise<User[]> {
+    const { data, error } = await supabase
+      .from("users")
+      .select("*")
+      .order("nome", { ascending: true });
+
+    if (error) throw error;
+    return data ?? [];
+  },
+
+  /**
+   * Promove/rebaixa um usuário entre cliente e admin.
+   * Requer que quem chame já seja admin (garantido pela RLS).
+   */
+  async updateRole(id: string, role: User["role"]): Promise<User> {
+    const { data, error } = await supabase
+      .from("users")
+      .update({ role })
+      .eq("id", id)
+      .select("*")
+      .single();
+
+    if (error) throw error;
+    return data;
+  },
 };
