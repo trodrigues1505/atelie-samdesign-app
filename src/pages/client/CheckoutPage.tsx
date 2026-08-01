@@ -51,7 +51,7 @@ export default function CheckoutPage() {
         frete,
       });
       clear();
-      navigate(`/pedido/${order.id}`, { replace: true });
+      navigate(`/pedido/${order.id}`, { replace: true, state: { justCreated: true } });
     } catch (err) {
       setSubmitError(
         err instanceof Error ? err.message : "Erro ao finalizar o pedido. Tente novamente."

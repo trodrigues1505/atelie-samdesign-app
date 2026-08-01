@@ -3,14 +3,21 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { CartProvider } from "@/contexts/CartContext";
 import { ProtectedRoute, AdminRoute } from "@/components/ProtectedRoute";
 import ClientLayout from "@/layouts/ClientLayout";
+import AdminLayout from "@/layouts/AdminLayout";
 import LoginPage from "@/pages/auth/LoginPage";
 import HomePage from "@/pages/client/HomePage";
 import ShopPage from "@/pages/client/ShopPage";
 import ProductPage from "@/pages/client/ProductPage";
 import CartPage from "@/pages/client/CartPage";
 import CheckoutPage from "@/pages/client/CheckoutPage";
-import OrderConfirmationPage from "@/pages/client/OrderConfirmationPage";
+import OrdersListPage from "@/pages/client/OrdersListPage";
+import OrderDetailPage from "@/pages/client/OrderDetailPage";
 import AdminDashboardPage from "@/pages/admin/AdminDashboardPage";
+import AdminProductsPage from "@/pages/admin/AdminProductsPage";
+import AdminProductFormPage from "@/pages/admin/AdminProductFormPage";
+import AdminOrdersPage from "@/pages/admin/AdminOrdersPage";
+import AdminOrderDetailPage from "@/pages/admin/AdminOrderDetailPage";
+import AdminClientsPage from "@/pages/admin/AdminClientsPage";
 
 export default function App() {
   return (
@@ -27,12 +34,21 @@ export default function App() {
                 <Route path="/loja/:id" element={<ProductPage />} />
                 <Route path="/carrinho" element={<CartPage />} />
                 <Route path="/checkout" element={<CheckoutPage />} />
-                <Route path="/pedido/:id" element={<OrderConfirmationPage />} />
+                <Route path="/pedidos" element={<OrdersListPage />} />
+                <Route path="/pedido/:id" element={<OrderDetailPage />} />
               </Route>
             </Route>
 
             <Route element={<AdminRoute />}>
-              <Route path="/admin" element={<AdminDashboardPage />} />
+              <Route element={<AdminLayout />}>
+                <Route path="/admin" element={<AdminDashboardPage />} />
+                <Route path="/admin/produtos" element={<AdminProductsPage />} />
+                <Route path="/admin/produtos/novo" element={<AdminProductFormPage />} />
+                <Route path="/admin/produtos/:id" element={<AdminProductFormPage />} />
+                <Route path="/admin/pedidos" element={<AdminOrdersPage />} />
+                <Route path="/admin/pedidos/:id" element={<AdminOrderDetailPage />} />
+                <Route path="/admin/clientes" element={<AdminClientsPage />} />
+              </Route>
             </Route>
           </Routes>
         </CartProvider>

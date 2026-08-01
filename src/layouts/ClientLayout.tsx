@@ -1,6 +1,7 @@
 import { Link, Outlet, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCart } from "@/contexts/CartContext";
+import { NotificationBell } from "@/components/NotificationBell";
 import logo from "@/assets/logo.png";
 
 export default function ClientLayout() {
@@ -42,6 +43,9 @@ export default function ClientLayout() {
           <Link to="/loja" className="rounded-md px-3 py-1.5 transition hover:bg-muted">
             Loja
           </Link>
+          <Link to="/pedidos" className="rounded-md px-3 py-1.5 transition hover:bg-muted">
+            Meus pedidos
+          </Link>
           <Link to="/carrinho" className="relative rounded-md px-3 py-1.5 transition hover:bg-muted">
             Carrinho
             {totalItems > 0 && (
@@ -50,6 +54,7 @@ export default function ClientLayout() {
               </span>
             )}
           </Link>
+          {user && <NotificationBell userId={user.id} />}
           <button
             onClick={handleSignOut}
             className="rounded-md border border-border px-3 py-1.5 transition hover:bg-muted"

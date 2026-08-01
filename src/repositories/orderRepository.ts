@@ -1,5 +1,5 @@
 import { supabase } from "@/api/supabaseClient";
-import type { Address, Order } from "@/types/database";
+import type { Address, Order, OrderItem } from "@/types/database";
 import type { CartItem } from "@/contexts/CartContext";
 
 interface CreateOrderParams {
@@ -57,6 +57,62 @@ export const orderRepository = {
       .select("*")
       .eq("user_id", userId)
       .order("created_at", { ascending: false });
+
+    if (error) throw error;
+    return data ?? [];
+  },
+
+  async getById(id: string): Promise<Order | null> {
+    const { data, error } = await supabase
+      .from("orders")
+      .select("*")
+      .eq("id", id)
+      .maybeSingle();
+
+    if (error) throw error;
+    return data;
+  },
+
+  /** Lista todos os pedidos de todos os clientes — uso exclusivo do admin. */
+  async listAll(): Promise<Order[]> {
+    const { data, error } = await supabase
+      .from("orders")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (error) throw error;
+    return data ?? [];
+  },
+
+  async updateStatus(id: string, status: Order["status"]): Promise<Order> {
+    const { data, error } = await supabase
+      .from("orders")
+      .update({ status })
+      .eq("id", id)
+      .select("*")
+      .single();
+
+    if (error) throw error;
+    return data;
+  },
+
+  async updateTracking(id: string, rastreio: string): Promise<Order> {
+    const { data, error } = await supabase
+      .from("orders")
+      .update({ rastreio })
+      .eq("id", id)
+      .select("*")
+      .single();
+
+    if (error) throw error;
+    return data;
+  },
+
+  async listItems(orderId: string): Promise<Array<OrderItem & { products: { nome: string } | null }>> {
+    const { data, error } = await supabase
+      .from("order_items")
+      .select("*, products(nome)")
+      .eq("order_id", orderId);
 
     if (error) throw error;
     return data ?? [];

@@ -1,149 +1,60 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
-import { useAuth } from "@/contexts/AuthContext";
+import { orderRepository } from "@/repositories/orderRepository";
+import { productRepository } from "@/repositories/productRepository";
 import { userRepository } from "@/repositories/userRepository";
-import type { User } from "@/types/database";
-import logo from "@/assets/logo.png";
+import { formatBRL } from "@/pages/client/ShopPage";
 
 export default function AdminDashboardPage() {
-  const { signOut } = useAuth();
-  const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [totalPedidos, setTotalPedidos] = useState(0);
+  const [faturamento, setFaturamento] = useState(0);
+  const [totalClientes, setTotalClientes] = useState(0);
+  const [totalProdutos, setTotalProdutos] = useState(0);
 
   useEffect(() => {
-    loadUsers();
-  }, []);
+    async function load() {
+      const [orders, users, products] = await Promise.all([
+        orderRepository.listAll(),
+        userRepository.listAll(),
+        productRepository.listAllAdmin(),
+      ]);
 
-  async function loadUsers() {
-    setLoading(true);
-    setError(null);
-    try {
-      const data = await userRepository.listAll();
-      setUsers(data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro ao carregar usuários.");
-    } finally {
+      setTotalPedidos(orders.length);
+      setFaturamento(
+        orders
+          .filter((o) => o.status !== "cancelado")
+          .reduce((sum, o) => sum + o.total, 0)
+      );
+      setTotalClientes(users.filter((u) => u.role === "cliente").length);
+      setTotalProdutos(products.length);
       setLoading(false);
     }
-  }
-
-  async function handleToggleRole(user: User) {
-    const novoRole = user.role === "admin" ? "cliente" : "admin";
-    const confirmMsg =
-      novoRole === "admin"
-        ? `Tornar ${user.nome} um administrador? Ele terá acesso total ao painel.`
-        : `Remover privilégios de administrador de ${user.nome}?`;
-
-    if (!window.confirm(confirmMsg)) return;
-
-    setUpdatingId(user.id);
-    try {
-      const updated = await userRepository.updateRole(user.id, novoRole);
-      setUsers((prev) => prev.map((u) => (u.id === updated.id ? updated : u)));
-    } catch (err) {
-      alert(err instanceof Error ? err.message : "Erro ao atualizar usuário.");
-    } finally {
-      setUpdatingId(null);
-    }
-  }
+    load();
+  }, []);
 
   return (
-    <div className="min-h-screen animate-fade-in p-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <img src={logo} alt="Ateliê Samdesign.ab" className="h-10 w-10 rounded-full object-cover" />
-          <h1 className="text-2xl font-bold">Painel administrativo</h1>
+    <div className="p-6">
+      <h1 className="text-2xl font-bold">Dashboard</h1>
+
+      {loading ? (
+        <p className="mt-4 text-sm text-muted-foreground">Carregando métricas...</p>
+      ) : (
+        <div className="mt-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
+          <MetricCard label="Pedidos" value={String(totalPedidos)} />
+          <MetricCard label="Faturamento" value={formatBRL(faturamento)} />
+          <MetricCard label="Clientes" value={String(totalClientes)} />
+          <MetricCard label="Produtos cadastrados" value={String(totalProdutos)} />
         </div>
-        <div className="flex items-center gap-2">
-          <Link
-            to="/"
-            className="rounded-md border border-border px-3 py-1.5 text-sm transition hover:bg-muted"
-          >
-            Ver como cliente
-          </Link>
-          <button
-            onClick={() => signOut()}
-            className="rounded-md border border-border px-3 py-1.5 text-sm transition hover:bg-muted"
-          >
-            Sair
-          </button>
-        </div>
-      </div>
+      )}
+    </div>
+  );
+}
 
-      <p className="mt-4 text-sm text-muted-foreground">
-        Dashboard, pedidos, produção e produtos serão implementados aqui.
-      </p>
-
-      <section className="mt-8">
-        <h2 className="text-lg font-semibold">Clientes e administradores</h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Promova um cliente a administrador para que ele também possa acessar este painel.
-        </p>
-
-        {loading && (
-          <p className="mt-4 text-sm text-muted-foreground">Carregando usuários...</p>
-        )}
-
-        {error && (
-          <p className="mt-4 text-sm text-red-600">{error}</p>
-        )}
-
-        {!loading && !error && (
-          <div className="mt-4 overflow-hidden rounded-lg border border-border">
-            <table className="w-full text-left text-sm">
-              <thead className="bg-muted">
-                <tr>
-                  <th className="px-4 py-2 font-medium">Nome</th>
-                  <th className="px-4 py-2 font-medium">E-mail</th>
-                  <th className="px-4 py-2 font-medium">Papel</th>
-                  <th className="px-4 py-2 font-medium">Ação</th>
-                </tr>
-              </thead>
-              <tbody>
-                {users.map((u) => (
-                  <tr key={u.id} className="border-t border-border">
-                    <td className="px-4 py-2">{u.nome}</td>
-                    <td className="px-4 py-2 text-muted-foreground">{u.email}</td>
-                    <td className="px-4 py-2">
-                      <span
-                        className={
-                          u.role === "admin"
-                            ? "rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary"
-                            : "rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground"
-                        }
-                      >
-                        {u.role === "admin" ? "Administrador" : "Cliente"}
-                      </span>
-                    </td>
-                    <td className="px-4 py-2">
-                      <button
-                        onClick={() => handleToggleRole(u)}
-                        disabled={updatingId === u.id}
-                        className="rounded-md border border-border px-3 py-1 text-xs font-medium transition hover:bg-muted disabled:opacity-50"
-                      >
-                        {updatingId === u.id
-                          ? "Atualizando..."
-                          : u.role === "admin"
-                            ? "Remover admin"
-                            : "Tornar admin"}
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-                {users.length === 0 && (
-                  <tr>
-                    <td colSpan={4} className="px-4 py-6 text-center text-muted-foreground">
-                      Nenhum usuário cadastrado ainda.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </section>
+function MetricCard({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-lg border border-border p-4">
+      <p className="text-sm text-muted-foreground">{label}</p>
+      <p className="mt-1 text-2xl font-bold">{value}</p>
     </div>
   );
 }
