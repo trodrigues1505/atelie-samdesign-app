@@ -1,5 +1,6 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { Navigate } from "react-router-dom";
+import logo from "@/assets/logo.png";
 
 export default function LoginPage() {
   const { session, signInWithGoogle } = useAuth();
@@ -8,17 +9,25 @@ export default function LoginPage() {
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center gap-8 bg-muted px-4">
-      <div className="text-center">
+      <div className="flex flex-col items-center text-center animate-fade-in-up">
+        <img
+          src={logo}
+          alt="Ateliê Samdesign.ab"
+          className="mb-4 h-32 w-32 rounded-full object-cover shadow-lg"
+        />
         <h1 className="text-3xl font-bold text-primary">Ateliê Samdesign.ab</h1>
         <p className="mt-2 text-muted-foreground">
           Entre para acompanhar seus pedidos
         </p>
       </div>
 
-      <div className="flex w-full max-w-sm flex-col gap-3">
+      <div
+        className="flex w-full max-w-sm flex-col gap-3 animate-fade-in-up"
+        style={{ animationDelay: "120ms" }}
+      >
         <button
           onClick={() => signInWithGoogle()}
-          className="flex items-center justify-center gap-3 rounded-lg border border-border bg-white px-4 py-3 font-medium shadow-sm transition hover:bg-muted"
+          className="flex items-center justify-center gap-3 rounded-lg border border-border bg-white px-4 py-3 font-medium shadow-sm transition hover:-translate-y-0.5 hover:shadow-md active:translate-y-0"
         >
           <GoogleIcon />
           Entrar com Google
