@@ -7,7 +7,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useCart } from "@/contexts/CartContext";
 import { orderRepository } from "@/repositories/orderRepository";
 import { calculateFrete } from "@/services/shippingService";
-import { shippingProvider } from "@/services/shipping/CorreiosProvider";
+import { shippingProvider } from "@/services/shipping";
 import type { FreightQuote } from "@/types/shipping";
 import { formatBRL } from "@/pages/client/ShopPage";
 

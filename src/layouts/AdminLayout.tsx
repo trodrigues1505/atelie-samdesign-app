@@ -9,6 +9,7 @@ const navItems = [
   { to: "/admin/produtos", label: "Produtos" },
   { to: "/admin/pedidos", label: "Pedidos" },
   { to: "/admin/clientes", label: "Clientes" },
+  { to: "/admin/integracoes", label: "Integrações" },
 ];
 
 export default function AdminLayout() {

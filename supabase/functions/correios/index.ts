@@ -25,7 +25,7 @@
 //   SUPABASE_SERVICE_ROLE_KEY  — já disponível automaticamente no ambiente
 //                                 de Edge Functions do Supabase
 
-import { createClient } from "jsr:@supabase/supabase-js@2";
+import { createClient } from "npm:@supabase/supabase-js@2";
 
 const CORREIOS_BASE_URL = "https://api.correios.com.br";
 

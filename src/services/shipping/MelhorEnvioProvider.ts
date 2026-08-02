@@ -2,13 +2,14 @@ import { supabase } from "@/api/supabaseClient";
 import type { FreightQuote, LabelResult, ShippingProvider, TrackingEvent } from "@/types/shipping";
 
 /**
- * Implementação Correios do ShippingProvider — exportada aqui, mas o app
- * consome via `@/services/shipping` (index.ts), que decide qual provider
- * está ativo.
+ * Assim como o CorreiosProvider, este NUNCA fala direto com a API do
+ * Melhor Envio — só chama a Edge Function `melhor-envio`
+ * (supabase/functions/melhor-envio/index.ts), que guarda o token de
+ * acesso em segredo.
  */
-export class CorreiosProvider implements ShippingProvider {
+export class MelhorEnvioProvider implements ShippingProvider {
   private async invoke<T>(action: string, payload: Record<string, unknown>): Promise<T> {
-    const { data, error } = await supabase.functions.invoke("correios", {
+    const { data, error } = await supabase.functions.invoke("melhor-envio", {
       body: { action, ...payload },
     });
     if (error) throw error;
@@ -30,5 +31,12 @@ export class CorreiosProvider implements ShippingProvider {
 
   async consultarRastreio(codigoRastreio: string): Promise<TrackingEvent[]> {
     return this.invoke<TrackingEvent[]>("consultarRastreio", { codigoRastreio });
+  }
+
+  /** Troca o "code" do OAuth pelos tokens de acesso — só usado na tela
+   * de Integrações do admin, não faz parte da interface ShippingProvider
+   * porque é específico do fluxo de conexão do Melhor Envio. */
+  async conectar(code: string): Promise<{ conectado: boolean }> {
+    return this.invoke<{ conectado: boolean }>("conectar", { code });
   }
 }

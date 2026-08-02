@@ -18,6 +18,8 @@ import AdminProductFormPage from "@/pages/admin/AdminProductFormPage";
 import AdminOrdersPage from "@/pages/admin/AdminOrdersPage";
 import AdminOrderDetailPage from "@/pages/admin/AdminOrderDetailPage";
 import AdminClientsPage from "@/pages/admin/AdminClientsPage";
+import AdminIntegrationsPage from "@/pages/admin/AdminIntegrationsPage";
+import MelhorEnvioCallbackPage from "@/pages/admin/MelhorEnvioCallbackPage";
 
 export default function App() {
   return (
@@ -48,6 +50,8 @@ export default function App() {
                 <Route path="/admin/pedidos" element={<AdminOrdersPage />} />
                 <Route path="/admin/pedidos/:id" element={<AdminOrderDetailPage />} />
                 <Route path="/admin/clientes" element={<AdminClientsPage />} />
+                <Route path="/admin/integracoes" element={<AdminIntegrationsPage />} />
+                <Route path="/admin/integracoes/melhor-envio/callback" element={<MelhorEnvioCallbackPage />} />
               </Route>
             </Route>
           </Routes>

@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { orderRepository } from "@/repositories/orderRepository";
 import { productionRepository } from "@/repositories/productionRepository";
-import { shippingProvider } from "@/services/shipping/CorreiosProvider";
+import { shippingProvider } from "@/services/shipping";
 import type { Order, OrderItem, ProductionRecord } from "@/types/database";
 import type { TrackingEvent } from "@/types/shipping";
 import { OrderTimeline } from "@/components/OrderTimeline";
