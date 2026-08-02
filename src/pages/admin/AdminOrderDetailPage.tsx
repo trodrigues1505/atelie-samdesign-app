@@ -2,7 +2,9 @@ import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { orderRepository } from "@/repositories/orderRepository";
 import { productionRepository } from "@/repositories/productionRepository";
+import { shippingProvider } from "@/services/shipping/CorreiosProvider";
 import type { Order, OrderItem, ProductionRecord } from "@/types/database";
+import type { TrackingEvent } from "@/types/shipping";
 import { OrderTimeline } from "@/components/OrderTimeline";
 import { formatBRL } from "@/pages/client/ShopPage";
 
@@ -52,6 +54,10 @@ export default function AdminOrderDetailPage() {
   const [observacao, setObservacao] = useState("");
   const [rastreio, setRastreio] = useState("");
   const [savingRastreio, setSavingRastreio] = useState(false);
+  const [gerandoEtiqueta, setGerandoEtiqueta] = useState(false);
+  const [etiquetaError, setEtiquetaError] = useState<string | null>(null);
+  const [trackingEvents, setTrackingEvents] = useState<TrackingEvent[]>([]);
+  const [consultandoRastreio, setConsultandoRastreio] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -117,6 +123,42 @@ export default function AdminOrderDetailPage() {
     }
   }
 
+  async function handleGerarEtiqueta() {
+    if (!order) return;
+    setGerandoEtiqueta(true);
+    setEtiquetaError(null);
+    try {
+      const result = await shippingProvider.gerarEtiqueta({ orderId: order.id });
+      setRastreio(result.codigoRastreio);
+      await load();
+    } catch (err) {
+      setEtiquetaError(
+        err instanceof Error
+          ? err.message
+          : "Erro ao gerar etiqueta. Confirme se a Edge Function dos Correios está publicada e configurada."
+      );
+    } finally {
+      setGerandoEtiqueta(false);
+    }
+  }
+
+  async function handleConsultarRastreio() {
+    if (!order?.rastreio) return;
+    setConsultandoRastreio(true);
+    try {
+      const events = await shippingProvider.consultarRastreio(order.rastreio);
+      setTrackingEvents(events);
+    } catch (err) {
+      alert(
+        err instanceof Error
+          ? err.message
+          : "Erro ao consultar rastreio nos Correios."
+      );
+    } finally {
+      setConsultandoRastreio(false);
+    }
+  }
+
   if (loading) return <p className="p-6 text-sm text-muted-foreground">Carregando...</p>;
   if (!order) return <p className="p-6 text-sm text-muted-foreground">Pedido não encontrado.</p>;
 
@@ -176,12 +218,40 @@ export default function AdminOrderDetailPage() {
       </section>
 
       <section className="mt-6 rounded-lg border border-border p-4">
-        <h2 className="text-sm font-semibold">Código de rastreio</h2>
-        <div className="mt-2 flex gap-2">
+        <h2 className="text-sm font-semibold">Etiqueta e rastreio (Correios)</h2>
+
+        <div className="mt-3 flex flex-wrap gap-2">
+          <button
+            onClick={handleGerarEtiqueta}
+            disabled={gerandoEtiqueta || Boolean(order.etiqueta_url)}
+            className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition hover:opacity-90 disabled:opacity-50"
+          >
+            {gerandoEtiqueta
+              ? "Gerando..."
+              : order.etiqueta_url
+                ? "Etiqueta já gerada"
+                : "Gerar etiqueta via Correios"}
+          </button>
+
+          {order.etiqueta_url && (
+            <a
+              href={order.etiqueta_url}
+              target="_blank"
+              rel="noreferrer"
+              className="rounded-md border border-border px-4 py-2 text-sm transition hover:bg-muted"
+            >
+              Imprimir etiqueta (PDF)
+            </a>
+          )}
+        </div>
+
+        {etiquetaError && <p className="mt-2 text-xs text-red-600">{etiquetaError}</p>}
+
+        <div className="mt-4 flex gap-2">
           <input
             value={rastreio}
             onChange={(e) => setRastreio(e.target.value)}
-            placeholder="Ex: BR123456789BR"
+            placeholder="Código de rastreio (preenchido automaticamente ao gerar etiqueta)"
             className="input flex-1"
           />
           <button
@@ -191,11 +261,27 @@ export default function AdminOrderDetailPage() {
           >
             Salvar
           </button>
+          {order.rastreio && (
+            <button
+              onClick={handleConsultarRastreio}
+              disabled={consultandoRastreio}
+              className="rounded-md border border-border px-3 py-1.5 text-sm transition hover:bg-muted disabled:opacity-50"
+            >
+              {consultandoRastreio ? "Consultando..." : "Consultar rastreio"}
+            </button>
+          )}
         </div>
-        <p className="mt-1 text-xs text-muted-foreground">
-          Preenchimento manual por enquanto — a geração automática de etiqueta faz parte da
-          integração com os Correios (próxima fase do roadmap).
-        </p>
+
+        {trackingEvents.length > 0 && (
+          <ul className="mt-3 flex flex-col gap-1 text-xs text-muted-foreground">
+            {trackingEvents.map((e, idx) => (
+              <li key={idx}>
+                {new Date(e.data).toLocaleString("pt-BR")} — {e.descricao}
+                {e.local ? ` (${e.local})` : ""}
+              </li>
+            ))}
+          </ul>
+        )}
       </section>
 
       <section className="mt-6 rounded-lg border border-border p-4">

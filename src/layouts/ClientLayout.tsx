@@ -2,11 +2,14 @@ import { Link, Outlet, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCart } from "@/contexts/CartContext";
 import { NotificationBell } from "@/components/NotificationBell";
+import { InstallBanner } from "@/components/InstallBanner";
+import { useInstallPrompt } from "@/hooks/useInstallPrompt";
 import logo from "@/assets/logo.png";
 
 export default function ClientLayout() {
   const { user, signOut } = useAuth();
   const { totalItems } = useCart();
+  const { canInstall, isInstalled, promptInstall } = useInstallPrompt();
   const navigate = useNavigate();
 
   async function handleSignOut() {
@@ -16,6 +19,8 @@ export default function ClientLayout() {
 
   return (
     <div className="min-h-screen animate-fade-in">
+      <InstallBanner />
+
       {user?.role === "admin" && (
         <div className="flex items-center justify-between bg-primary px-4 py-2 text-sm text-primary-foreground">
           <span>
@@ -55,6 +60,14 @@ export default function ClientLayout() {
             )}
           </Link>
           {user && <NotificationBell userId={user.id} />}
+          {!isInstalled && canInstall && (
+            <button
+              onClick={() => promptInstall()}
+              className="rounded-md border border-border px-3 py-1.5 transition hover:bg-muted"
+            >
+              Instalar aplicativo
+            </button>
+          )}
           <button
             onClick={handleSignOut}
             className="rounded-md border border-border px-3 py-1.5 transition hover:bg-muted"
