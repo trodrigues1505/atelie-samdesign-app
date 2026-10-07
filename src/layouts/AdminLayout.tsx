@@ -1,74 +1,80 @@
-import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
-import { useAuth } from "@/contexts/AuthContext";
+import { Link, NavLink, Outlet } from "react-router-dom";
+import { ClipboardList, LayoutDashboard, Package, Plug, Store, Users } from "lucide-react";
 import { InstallBanner } from "@/components/InstallBanner";
-import { useInstallPrompt } from "@/hooks/useInstallPrompt";
+import { BottomNav, type BottomNavItem } from "@/components/layout/BottomNav";
+import { UserMenu } from "@/components/layout/UserMenu";
+import { cn } from "@/lib/cn";
 import logo from "@/assets/logo.png";
 
-const navItems = [
-  { to: "/admin", label: "Dashboard", end: true },
-  { to: "/admin/produtos", label: "Produtos" },
-  { to: "/admin/pedidos", label: "Pedidos" },
-  { to: "/admin/clientes", label: "Clientes" },
-  { to: "/admin/integracoes", label: "Integrações" },
+const navItems: BottomNavItem[] = [
+  { to: "/admin", label: "Dashboard", icon: LayoutDashboard, end: true },
+  { to: "/admin/produtos", label: "Produtos", icon: Package },
+  { to: "/admin/pedidos", label: "Pedidos", icon: ClipboardList },
+  { to: "/admin/clientes", label: "Clientes", icon: Users },
+  { to: "/admin/integracoes", label: "Integrações", icon: Plug },
 ];
 
 export default function AdminLayout() {
-  const { signOut } = useAuth();
-  const { canInstall, isInstalled, promptInstall } = useInstallPrompt();
-  const navigate = useNavigate();
-
-  async function handleSignOut() {
-    await signOut();
-    navigate("/login");
-  }
-
   return (
-    <div className="min-h-screen animate-fade-in">
-      <InstallBanner />
-
-      <header className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-4 py-3">
-        <Link to="/admin" className="flex items-center gap-2">
-          <img src={logo} alt="Ateliê Samdesign.ab" className="h-9 w-9 rounded-full object-cover" />
-          <span className="font-semibold">Painel admin</span>
+    <div className="min-h-screen animate-fade-in bg-background text-foreground lg:grid lg:grid-cols-[256px_minmax(0,1fr)]">
+      <aside className="sticky top-0 hidden h-dvh flex-col border-r border-border p-4 lg:flex">
+        <Link to="/admin" className="mb-6 flex items-center gap-3 px-2 pt-2">
+          <img src={logo} alt="" className="h-9 w-9 rounded-full object-cover" />
+          <span className="font-semibold tracking-tight">Painel admin</span>
         </Link>
 
-        <nav className="flex flex-wrap items-center gap-1 text-sm">
-          {navItems.map((item) => (
+        <nav aria-label="Administração" className="flex flex-col gap-1">
+          {navItems.map(({ to, label, icon: Icon, end }) => (
             <NavLink
-              key={item.to}
-              to={item.to}
-              end={item.end}
+              key={to}
+              to={to}
+              end={end}
               className={({ isActive }) =>
-                "rounded-md px-3 py-1.5 transition hover:bg-muted " +
-                (isActive ? "bg-muted font-medium" : "")
+                cn(
+                  "flex min-h-11 items-center gap-3 rounded-xl px-3 text-sm font-medium transition-colors",
+                  isActive
+                    ? "bg-primary-soft text-primary-ink"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                )
               }
             >
-              {item.label}
+              <Icon className="h-4 w-4" aria-hidden="true" />
+              {label}
             </NavLink>
           ))}
-          <Link to="/" className="rounded-md border border-border px-3 py-1.5 transition hover:bg-muted">
-            Ver como cliente
-          </Link>
-          {!isInstalled && canInstall && (
-            <button
-              onClick={() => promptInstall()}
-              className="rounded-md border border-border px-3 py-1.5 transition hover:bg-muted"
-            >
-              Instalar aplicativo
-            </button>
-          )}
-          <button
-            onClick={handleSignOut}
-            className="rounded-md border border-border px-3 py-1.5 transition hover:bg-muted"
-          >
-            Sair
-          </button>
         </nav>
-      </header>
+      </aside>
 
-      <main>
-        <Outlet />
-      </main>
+      <div className="min-w-0">
+        <header className="sticky top-0 z-30 border-b border-border bg-background/85 pt-[env(safe-area-inset-top)] backdrop-blur">
+          <div className="flex h-16 items-center justify-between gap-3 px-4 lg:justify-end lg:px-6">
+            <Link to="/admin" className="flex min-w-0 items-center gap-3 lg:hidden">
+              <img src={logo} alt="" className="h-9 w-9 shrink-0 rounded-full object-cover" />
+              <span className="truncate font-semibold tracking-tight">Painel admin</span>
+            </Link>
+
+            <div className="flex shrink-0 items-center gap-2">
+              <Link to="/" className="btn btn-sm btn-secondary hidden sm:inline-flex">
+                <Store className="h-4 w-4" aria-hidden="true" />
+                Ver como cliente
+              </Link>
+              <UserMenu
+                items={[
+                  { to: "/", label: "Ver como cliente", icon: Store, className: "sm:hidden" },
+                ]}
+              />
+            </div>
+          </div>
+        </header>
+
+        <InstallBanner className="lg:px-6" />
+
+        <main className="pb-24 lg:pb-8">
+          <Outlet />
+        </main>
+      </div>
+
+      <BottomNav items={navItems} className="lg:hidden" />
     </div>
   );
 }

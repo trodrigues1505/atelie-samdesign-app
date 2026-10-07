@@ -1,18 +1,15 @@
 @import "tailwindcss";
 
-@theme {
-  --font-sans: "Inter", system-ui, sans-serif;
+/* O projeto alterna o tema pela classe .dark; sem esta linha o Tailwind v4
+   usaria prefers-color-scheme e as classes dark: ignorariam a classe. */
+@custom-variant dark (&:where(.dark, .dark *));
 
-  --color-background: hsl(var(--background));
-  --color-foreground: hsl(var(--foreground));
-  --color-primary: hsl(var(--primary));
-  --color-primary-foreground: hsl(var(--primary-foreground));
-  --color-muted: hsl(var(--muted));
-  --color-muted-foreground: hsl(var(--muted-foreground));
-  --color-border: hsl(var(--border));
+@theme {
+  --font-sans: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 
   --animate-fade-in-up: fade-in-up 0.5s ease-out both;
   --animate-fade-in: fade-in 0.4s ease-out both;
+  --animate-pop: pop 0.16s ease-out both;
 
   @keyframes fade-in-up {
     from {
@@ -28,33 +25,173 @@
     from { opacity: 0; }
     to { opacity: 1; }
   }
+  @keyframes pop {
+    from {
+      opacity: 0;
+      transform: translateY(-4px) scale(0.98);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+}
+
+/* "inline" faz cada utilitário usar hsl(var(--token)) direto, então o valor
+   é resolvido onde a classe é usada (e troca certo com .dark). */
+@theme inline {
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+  --color-primary-ink: hsl(var(--primary-ink));
+  --color-primary-soft: hsl(var(--primary-soft));
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+  --color-border: hsl(var(--border));
+  --color-ring: hsl(var(--ring));
+  --color-success: hsl(var(--success));
+  --color-success-soft: hsl(var(--success-soft));
+  --color-warning: hsl(var(--warning));
+  --color-warning-soft: hsl(var(--warning-soft));
+  --color-info: hsl(var(--info));
+  --color-info-soft: hsl(var(--info-soft));
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-soft: hsl(var(--destructive-soft));
 }
 
 :root {
-  color-scheme: light dark;
-  --background: 0 0% 100%;
-  --foreground: 240 10% 3.9%;
-  --primary: 330 100% 45%;
+  color-scheme: light;
+
+  /* Superfícies */
+  --background: 30 25% 98%;
+  --foreground: 24 10% 10%;
+  --card: 0 0% 100%;
+  --card-foreground: 24 10% 10%;
+  --muted: 30 15% 94%;
+  --muted-foreground: 25 8% 38%;
+  --border: 30 12% 89%;
+
+  /* Marca (magenta do ateliê). --primary-ink é a versão para TEXTO sobre
+     fundo claro; --primary-soft é o fundo suave de destaques. */
+  --primary: 327 100% 43%;
   --primary-foreground: 0 0% 100%;
-  --muted: 240 4.8% 95.9%;
-  --muted-foreground: 240 3.8% 46.1%;
-  --border: 240 5.9% 90%;
+  --primary-ink: 327 100% 40%;
+  --primary-soft: 327 100% 96%;
+  --ring: 327 100% 43%;
+
+  /* Estados */
+  --success: 152 65% 24%;
+  --success-soft: 152 55% 93%;
+  --warning: 30 90% 28%;
+  --warning-soft: 40 95% 91%;
+  --info: 217 80% 38%;
+  --info-soft: 217 90% 94%;
+  --destructive: 0 72% 40%;
+  --destructive-soft: 0 85% 95%;
 }
 
 .dark {
-  --background: 240 10% 3.9%;
-  --foreground: 0 0% 98%;
-  --primary: 330 90% 55%;
+  color-scheme: dark;
+
+  --background: 20 8% 7%;
+  --foreground: 30 15% 96%;
+  --card: 20 7% 10%;
+  --card-foreground: 30 15% 96%;
+  --muted: 20 6% 16%;
+  --muted-foreground: 25 8% 65%;
+  --border: 20 6% 19%;
+
+  --primary: 327 85% 46%;
   --primary-foreground: 0 0% 100%;
-  --muted: 240 3.7% 15.9%;
-  --muted-foreground: 240 5% 64.9%;
-  --border: 240 3.7% 15.9%;
+  --primary-ink: 327 90% 70%;
+  --primary-soft: 327 45% 17%;
+  --ring: 327 90% 60%;
+
+  --success: 152 55% 62%;
+  --success-soft: 152 40% 16%;
+  --warning: 38 90% 62%;
+  --warning-soft: 38 60% 15%;
+  --info: 217 90% 72%;
+  --info-soft: 217 50% 17%;
+  --destructive: 0 85% 70%;
+  --destructive-soft: 0 50% 17%;
 }
 
-body {
-  @apply bg-background text-foreground antialiased;
+@layer base {
+  /* Tailwind v4 usa currentColor como cor de borda padrão (bordas pretas). */
+  *,
+  ::before,
+  ::after {
+    border-color: hsl(var(--border));
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+  }
+
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]) {
+    cursor: pointer;
+  }
+
+  :focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
+  }
+
+  ::selection {
+    background: hsl(var(--primary) / 0.2);
+  }
 }
 
-.input {
-  @apply rounded-md border border-border px-3 py-2 text-sm outline-none transition focus:border-primary focus:ring-1 focus:ring-primary;
+/* Componentes ficam na layer "components" para que classes utilitárias
+   (ex.: className="input w-full" ou "btn rounded-full") consigam sobrescrevê-los.
+   Fora de layer, o CSS sempre ganharia dos utilitários. */
+@layer components {
+  .card {
+    @apply rounded-2xl border border-border/70 bg-card text-card-foreground;
+  }
+
+  .btn {
+    @apply inline-flex h-11 shrink-0 select-none items-center justify-center gap-2 whitespace-nowrap rounded-xl px-4 text-sm font-medium transition duration-150 disabled:pointer-events-none disabled:opacity-50 motion-safe:active:scale-[0.98] sm:h-10;
+  }
+  .btn-sm {
+    @apply h-10 px-3 sm:h-9;
+  }
+  .btn-primary {
+    @apply bg-primary text-primary-foreground hover:bg-primary/90;
+  }
+  .btn-secondary {
+    @apply border border-border bg-card text-foreground hover:bg-muted;
+  }
+  .btn-ghost {
+    @apply text-muted-foreground hover:bg-muted hover:text-foreground;
+  }
+  .btn-destructive {
+    @apply bg-destructive text-white hover:bg-destructive/90;
+  }
+
+  /* 16px no celular evita o zoom automático do iOS ao focar o campo. */
+  .input {
+    @apply min-h-11 rounded-xl border border-border bg-card px-3.5 py-2 text-base text-foreground outline-none transition duration-150 placeholder:text-muted-foreground hover:border-foreground/25 focus:border-primary focus:ring-4 focus:ring-primary/15 disabled:cursor-not-allowed disabled:opacity-60 aria-invalid:border-destructive sm:min-h-10 sm:text-sm;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
