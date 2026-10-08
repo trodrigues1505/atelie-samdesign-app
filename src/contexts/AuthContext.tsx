@@ -1,4 +1,13 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "@/api/supabaseClient";
 import { userRepository } from "@/repositories/userRepository";
@@ -19,47 +28,83 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // O listener do Supabase é criado uma vez só, então lê o usuário atual por ref.
+  const userRef = useRef<User | null>(null);
+  // Sincronização em andamento: o Supabase dispara INITIAL_SESSION logo ao assinar,
+  // o que fazia a mesma consulta rodar duas vezes na abertura do app.
+  const inflight = useRef<{ userId: string; promise: Promise<void> } | null>(null);
+
   useEffect(() => {
     let isMounted = true;
 
-    async function syncUser(currentSession: Session | null) {
+    function applyUser(next: User | null) {
+      userRef.current = next;
+      if (isMounted) setUser(next);
+    }
+
+    function syncUser(currentSession: Session | null): Promise<void> {
       if (!currentSession) {
-        if (isMounted) setUser(null);
-        return;
+        inflight.current = null;
+        applyUser(null);
+        return Promise.resolve();
       }
-      try {
-        const dbUser = await userRepository.syncFromAuthUser(currentSession.user);
-        if (isMounted) setUser(dbUser);
-      } catch (err) {
-        console.error("Falha ao sincronizar usuário na tabela users:", err);
-      }
+
+      const userId = currentSession.user.id;
+      if (inflight.current?.userId === userId) return inflight.current.promise;
+
+      const promise: Promise<void> = (async () => {
+        try {
+          const dbUser = await userRepository.syncFromAuthUser(currentSession.user);
+          // Se saiu da conta (ou trocou de usuário) enquanto buscava, descarta o resultado.
+          if (inflight.current?.userId === userId) applyUser(dbUser);
+        } catch (err) {
+          console.error("Falha ao sincronizar usuário na tabela users:", err);
+        }
+      })().finally(() => {
+        if (inflight.current?.promise === promise) inflight.current = null;
+      });
+
+      inflight.current = { userId, promise };
+      return promise;
     }
 
     // Sessão inicial
-    supabase.auth.getSession().then(({ data: { session: initialSession } }) => {
+    supabase.auth
+      .getSession()
+      .then(({ data: { session: initialSession } }) => {
+        if (!isMounted) return;
+        setSession(initialSession);
+        return syncUser(initialSession);
+      })
+      .catch((err: unknown) => {
+        console.error("Falha ao ler a sessão:", err);
+      })
+      .finally(() => {
+        // Sem o catch acima, uma falha aqui deixava o app em "carregando" para sempre.
+        if (isMounted) setLoading(false);
+      });
+
+    // Mudanças de sessão (login, logout, refresh token)
+    const { data: subscription } = supabase.auth.onAuthStateChange((_event, newSession) => {
       if (!isMounted) return;
-      setSession(initialSession);
-      syncUser(initialSession).finally(() => {
+      setSession(newSession);
+      // Chegou a sessão mas o perfil ainda não: mantém "carregando" para as rotas não
+      // decidirem com user === null (ex.: AdminRoute mandando o admin para "/").
+      // Com o perfil já carregado (refresh de token) não mexe, para não trocar a tela.
+      if (newSession && !userRef.current) setLoading(true);
+      void syncUser(newSession).finally(() => {
         if (isMounted) setLoading(false);
       });
     });
 
-    // Mudanças de sessão (login, logout, refresh token)
-    const { data: subscription } = supabase.auth.onAuthStateChange(
-      (_event, newSession) => {
-        if (!isMounted) return;
-        setSession(newSession);
-        syncUser(newSession);
-      }
-    );
-
     return () => {
       isMounted = false;
+      inflight.current = null;
       subscription.subscription.unsubscribe();
     };
   }, []);
 
-  async function signInWithGoogle() {
+  const signInWithGoogle = useCallback(async () => {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
@@ -67,20 +112,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       },
     });
     if (error) throw error;
-  }
+  }, []);
 
-  async function signOut() {
+  const signOut = useCallback(async () => {
     const { error } = await supabase.auth.signOut();
     if (error) throw error;
-  }
+  }, []);
 
-  return (
-    <AuthContext.Provider
-      value={{ session, user, loading, signInWithGoogle, signOut }}
-    >
-      {children}
-    </AuthContext.Provider>
+  // Sem memoização, cada renovação de token recriava o objeto e re-renderizava
+  // todos os componentes que usam useAuth.
+  const value = useMemo(
+    () => ({ session, user, loading, signInWithGoogle, signOut }),
+    [session, user, loading, signInWithGoogle, signOut]
   );
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() {

@@ -2,6 +2,7 @@ import { useEffect, useId, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Download, LogOut, User, type LucideIcon } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useCart } from "@/contexts/CartContext";
 import { useInstallPrompt } from "@/hooks/useInstallPrompt";
 import { cn } from "@/lib/cn";
 
@@ -15,8 +16,10 @@ export type UserMenuItem = {
 export function UserMenu({ items = [] }: { items?: UserMenuItem[] }) {
   const { user, signOut } = useAuth();
   const { canInstall, isInstalled, promptInstall } = useInstallPrompt();
+  const { clear } = useCart();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
+  const [signOutFailed, setSignOutFailed] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const panelId = useId();
@@ -41,8 +44,16 @@ export function UserMenu({ items = [] }: { items?: UserMenuItem[] }) {
   }, [open]);
 
   async function handleSignOut() {
+    setSignOutFailed(false);
+    try {
+      await signOut();
+    } catch {
+      setSignOutFailed(true);
+      return;
+    }
+    // O aparelho pode ser compartilhado: o carrinho pertence a quem acabou de sair.
+    clear();
     setOpen(false);
-    await signOut();
     navigate("/login");
   }
 
@@ -99,6 +110,11 @@ export function UserMenu({ items = [] }: { items?: UserMenuItem[] }) {
             </button>
           )}
 
+          {signOutFailed && (
+            <p role="alert" className="px-3 pb-1 pt-2 text-xs text-destructive">
+              Não foi possível sair. Tente de novo.
+            </p>
+          )}
           <button type="button" onClick={handleSignOut} className={cn(row, "text-destructive")}>
             <LogOut className="h-4 w-4" aria-hidden="true" />
             Sair

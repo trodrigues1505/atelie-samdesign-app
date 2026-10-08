@@ -1,5 +1,6 @@
 import { Navigate, Outlet } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import logo from "@/assets/logo.png";
 
 export function ProtectedRoute() {
   const { session, loading } = useAuth();
@@ -20,10 +21,18 @@ export function AdminRoute() {
   return <Outlet />;
 }
 
-function FullscreenLoading() {
+export function FullscreenLoading() {
   return (
-    <div className="flex h-screen items-center justify-center">
-      <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+    <div
+      role="status"
+      className="flex min-h-dvh flex-col items-center justify-center gap-5 bg-background"
+    >
+      <img src={logo} alt="" className="h-16 w-16 rounded-full object-cover" />
+      <div
+        aria-hidden="true"
+        className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent"
+      />
+      <span className="sr-only">Carregando...</span>
     </div>
   );
 }

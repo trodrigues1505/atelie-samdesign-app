@@ -6,7 +6,9 @@ import { cn } from "@/lib/cn";
 const DISMISSED_KEY = "atelie-samdesign-install-banner-dismissed";
 
 function isIOS(): boolean {
-  return /iphone|ipad|ipod/i.test(window.navigator.userAgent);
+  const { userAgent, platform, maxTouchPoints } = window.navigator;
+  // O iPadOS 13+ se identifica como Mac; o que o diferencia é a tela de toque.
+  return /iphone|ipad|ipod/i.test(userAgent) || (platform === "MacIntel" && maxTouchPoints > 1);
 }
 
 // localStorage pode lançar erro (ex.: navegação privada no Safari).

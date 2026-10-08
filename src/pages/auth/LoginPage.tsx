@@ -1,37 +1,58 @@
-import { useAuth } from "@/contexts/AuthContext";
+import { useState } from "react";
 import { Navigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
+import { FullscreenLoading } from "@/components/ProtectedRoute";
 import logo from "@/assets/logo.png";
 
 export default function LoginPage() {
-  const { session, signInWithGoogle } = useAuth();
+  const { session, loading, signInWithGoogle } = useAuth();
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
+  // Com sessão salva, a tela de login piscava até a sessão terminar de carregar.
+  if (loading) return <FullscreenLoading />;
   if (session) return <Navigate to="/" replace />;
 
+  async function handleGoogle() {
+    setBusy(true);
+    setError(null);
+    try {
+      await signInWithGoogle();
+    } catch {
+      setError("Não foi possível entrar com o Google. Tente de novo.");
+      setBusy(false);
+    }
+  }
+
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center gap-8 bg-muted px-4">
-      <div className="flex flex-col items-center text-center animate-fade-in-up">
+    <div className="flex min-h-dvh flex-col bg-primary sm:items-center sm:justify-center sm:p-6">
+      <div className="flex flex-1 flex-col items-center justify-center px-6 pb-10 pt-[calc(env(safe-area-inset-top)+3rem)] text-center text-primary-foreground sm:flex-none sm:pb-8 sm:pt-0">
         <img
           src={logo}
-          alt="Ateliê Samdesign.ab"
-          className="mb-4 h-32 w-32 rounded-full object-cover shadow-lg"
+          alt=""
+          className="h-24 w-24 rounded-full object-cover ring-4 ring-white/30"
         />
-        <h1 className="text-3xl font-bold text-primary">Ateliê Samdesign.ab</h1>
-        <p className="mt-2 text-muted-foreground">
-          Entre para acompanhar seus pedidos
-        </p>
+        <h1 className="mt-5 text-2xl font-semibold tracking-tight sm:text-3xl">
+          Ateliê Samdesign.ab
+        </h1>
+        <p className="mt-2">Entre para acompanhar seus pedidos</p>
       </div>
 
-      <div
-        className="flex w-full max-w-sm flex-col gap-3 animate-fade-in-up"
-        style={{ animationDelay: "120ms" }}
-      >
+      <div className="animate-fade-in-up rounded-t-[2rem] bg-card px-6 pb-[calc(env(safe-area-inset-bottom)+2rem)] pt-8 sm:w-full sm:max-w-sm sm:rounded-3xl sm:pb-8">
         <button
-          onClick={() => signInWithGoogle()}
-          className="flex items-center justify-center gap-3 rounded-lg border border-border bg-white px-4 py-3 font-medium shadow-sm transition hover:-translate-y-0.5 hover:shadow-md active:translate-y-0"
+          type="button"
+          onClick={handleGoogle}
+          disabled={busy}
+          className="btn btn-secondary h-12 w-full gap-3 text-base sm:h-12"
         >
           <GoogleIcon />
-          Entrar com Google
+          {busy ? "Abrindo o Google..." : "Entrar com Google"}
         </button>
+        {error && (
+          <p role="alert" className="mt-3 text-center text-sm text-destructive">
+            {error}
+          </p>
+        )}
       </div>
     </div>
   );
