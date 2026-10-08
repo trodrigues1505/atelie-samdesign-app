@@ -1,6 +1,7 @@
 import { Link, NavLink, Outlet } from "react-router-dom";
 import { ClipboardList, LayoutDashboard, Package, Plug, Store, Users } from "lucide-react";
 import { InstallBanner } from "@/components/InstallBanner";
+import { FeedbackProvider } from "@/components/ds/Feedback";
 import { BottomNav, type BottomNavItem } from "@/components/layout/BottomNav";
 import { UserMenu } from "@/components/layout/UserMenu";
 import { cn } from "@/lib/cn";
@@ -16,6 +17,7 @@ const navItems: BottomNavItem[] = [
 
 export default function AdminLayout() {
   return (
+    <FeedbackProvider>
     <div className="min-h-screen animate-fade-in bg-background text-foreground lg:grid lg:grid-cols-[256px_minmax(0,1fr)]">
       <aside className="sticky top-0 hidden h-dvh flex-col border-r border-border p-4 lg:flex">
         <Link to="/admin" className="mb-6 flex items-center gap-3 px-2 pt-2">
@@ -76,5 +78,6 @@ export default function AdminLayout() {
 
       <BottomNav items={navItems} className="lg:hidden" />
     </div>
+    </FeedbackProvider>
   );
 }

@@ -1,3 +1,7 @@
+import { Truck } from "lucide-react";
+import { Badge } from "@/components/ds/Badge";
+import { PageHeader } from "@/components/ds/PageHeader";
+
 export default function AdminIntegrationsPage() {
   const clientId = import.meta.env.VITE_MELHOR_ENVIO_CLIENT_ID;
   const redirectUri = import.meta.env.VITE_MELHOR_ENVIO_REDIRECT_URI;
@@ -27,29 +31,41 @@ export default function AdminIntegrationsPage() {
     : null;
 
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold">Integrações</h1>
+    <div className="px-4 py-6 sm:px-6 sm:py-8">
+      <PageHeader title="Integrações" description="Serviços conectados à loja." />
 
-      <section className="mt-6 max-w-lg rounded-lg border border-border p-4">
-        <h2 className="text-sm font-semibold">Melhor Envio</h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Conecte sua conta do Melhor Envio para calcular frete e gerar etiquetas
-          direto pelo painel. {sandbox && "Ambiente de testes (sandbox) ativo."}
-        </p>
+      <section className="card mt-8 max-w-2xl p-5 sm:p-6">
+        <div className="flex items-start gap-4">
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary-soft text-primary-ink">
+            <Truck className="h-5 w-5" aria-hidden="true" />
+          </span>
 
-        {!clientId ? (
-          <p className="mt-3 text-sm text-red-600">
-            Configure VITE_MELHOR_ENVIO_CLIENT_ID e VITE_MELHOR_ENVIO_REDIRECT_URI
-            no .env antes de conectar.
-          </p>
-        ) : (
-          <a
-            href={authorizeUrl!}
-            className="mt-3 inline-block rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition hover:opacity-90"
-          >
-            Conectar com Melhor Envio
-          </a>
-        )}
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <h2 className="font-semibold">Melhor Envio</h2>
+              <Badge tone={authorizeUrl ? "success" : "warning"}>
+                {authorizeUrl ? "Pronto para conectar" : "Não configurado"}
+              </Badge>
+              {sandbox && <Badge tone="info">Ambiente de testes</Badge>}
+            </div>
+
+            <p className="mt-1 text-sm text-muted-foreground">
+              Conecte sua conta do Melhor Envio para calcular frete e gerar etiquetas direto pelo
+              painel.
+            </p>
+
+            {authorizeUrl ? (
+              <a href={authorizeUrl} className="btn btn-primary mt-4">
+                Conectar com Melhor Envio
+              </a>
+            ) : (
+              <p className="mt-3 text-sm text-warning">
+                Configure VITE_MELHOR_ENVIO_CLIENT_ID e VITE_MELHOR_ENVIO_REDIRECT_URI no .env
+                antes de conectar.
+              </p>
+            )}
+          </div>
+        </div>
       </section>
     </div>
   );

@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { ShoppingCart } from "lucide-react";
 import { addressSchema, type AddressFormValues } from "@/schemas/checkoutSchema";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCart } from "@/contexts/CartContext";
@@ -9,7 +10,12 @@ import { orderRepository } from "@/repositories/orderRepository";
 import { calculateFrete } from "@/services/shippingService";
 import { shippingProvider } from "@/services/shipping";
 import type { FreightQuote } from "@/types/shipping";
-import { formatBRL } from "@/pages/client/ShopPage";
+import { formatBRL } from "@/lib/format";
+import { EmptyState } from "@/components/ds/EmptyState";
+import { Field } from "@/components/ds/Field";
+import { PageHeader } from "@/components/ds/PageHeader";
+import { Section } from "@/components/ds/Section";
+import { Skeleton } from "@/components/ds/Skeleton";
 
 export default function CheckoutPage() {
   const { user } = useAuth();
@@ -41,7 +47,11 @@ export default function CheckoutPage() {
   useEffect(() => {
     const cepLimpo = (cep ?? "").replace(/\D/g, "");
     if (cepLimpo.length !== 8) {
+      // Zera também o carregando/erro: se o CEP deixa de ser válido no meio de uma
+      // consulta, o resultado é descartado e "Calculando frete..." ficaria preso.
       setQuotes([]);
+      setQuotesLoading(false);
+      setQuotesError(null);
       return;
     }
 
@@ -81,11 +91,19 @@ export default function CheckoutPage() {
 
   if (items.length === 0) {
     return (
-      <div className="p-6">
-        <h1 className="text-2xl font-bold">Checkout</h1>
-        <p className="mt-4 text-sm text-muted-foreground">
-          Seu carrinho está vazio — volte à loja para adicionar produtos.
-        </p>
+      <div className="px-4 py-6 sm:px-6 sm:py-8">
+        <PageHeader title="Checkout" />
+        <EmptyState
+          className="mt-6"
+          icon={ShoppingCart}
+          title="Seu carrinho está vazio"
+          description="Volte à loja para adicionar produtos."
+          action={
+            <Link to="/loja" className="btn btn-primary">
+              Ir para a loja
+            </Link>
+          }
+        />
       </div>
     );
   }
@@ -114,122 +132,165 @@ export default function CheckoutPage() {
   }
 
   return (
-    <div className="grid gap-8 p-6 sm:grid-cols-2">
-      <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
-        <h1 className="text-2xl font-bold">Endereço de entrega</h1>
+    <form
+      onSubmit={handleSubmit(onSubmit)}
+      className="grid gap-6 px-4 py-6 sm:px-6 sm:py-8 lg:grid-cols-[minmax(0,1fr)_380px] lg:items-start lg:gap-8"
+    >
+      <div className="flex flex-col gap-4">
+        <PageHeader title="Finalizar pedido" backTo="/carrinho" backLabel="Carrinho" />
 
-        <Field label="CEP" error={errors.cep?.message}>
-          <input {...register("cep")} placeholder="00000-000" className="input" />
-        </Field>
+        <Section title="Endereço de entrega" className="mt-2">
+          <div className="flex flex-col gap-4">
+            <Field label="CEP" error={errors.cep?.message}>
+              <input
+                {...register("cep")}
+                inputMode="numeric"
+                autoComplete="postal-code"
+                placeholder="00000-000"
+                aria-invalid={Boolean(errors.cep)}
+                className="input sm:max-w-48"
+              />
+            </Field>
 
-        <Field label="Rua / Avenida" error={errors.logradouro?.message}>
-          <input {...register("logradouro")} className="input" />
-        </Field>
+            <Field label="Rua / Avenida" error={errors.logradouro?.message}>
+              <input
+                {...register("logradouro")}
+                autoComplete="address-line1"
+                aria-invalid={Boolean(errors.logradouro)}
+                className="input"
+              />
+            </Field>
 
-        <div className="grid grid-cols-2 gap-4">
-          <Field label="Número" error={errors.numero?.message}>
-            <input {...register("numero")} className="input" />
-          </Field>
-          <Field label="Complemento">
-            <input {...register("complemento")} className="input" />
-          </Field>
-        </div>
-
-        <Field label="Bairro" error={errors.bairro?.message}>
-          <input {...register("bairro")} className="input" />
-        </Field>
-
-        <div className="grid grid-cols-2 gap-4">
-          <Field label="Cidade" error={errors.cidade?.message}>
-            <input {...register("cidade")} className="input" />
-          </Field>
-          <Field label="UF" error={errors.uf?.message}>
-            <input {...register("uf")} maxLength={2} className="input uppercase" />
-          </Field>
-        </div>
-
-        {quotes.length > 0 && (
-          <div className="flex flex-col gap-2 rounded-md border border-border p-3">
-            <p className="text-sm font-medium">Escolha o envio</p>
-            {quotes.map((q) => (
-              <label key={q.servico} className="flex items-center gap-2 text-sm">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field label="Número" error={errors.numero?.message}>
                 <input
-                  type="radio"
-                  name="servico"
-                  checked={selectedServico === q.servico}
-                  onChange={() => setSelectedServico(q.servico)}
+                  {...register("numero")}
+                  inputMode="numeric"
+                  aria-invalid={Boolean(errors.numero)}
+                  className="input"
                 />
-                {q.nome} — {formatBRL(q.valor)} ({q.prazoDias} dias úteis)
-              </label>
-            ))}
+              </Field>
+              <Field label="Complemento">
+                <input {...register("complemento")} autoComplete="address-line2" className="input" />
+              </Field>
+            </div>
+
+            <Field label="Bairro" error={errors.bairro?.message}>
+              <input
+                {...register("bairro")}
+                aria-invalid={Boolean(errors.bairro)}
+                className="input"
+              />
+            </Field>
+
+            <div className="grid grid-cols-[minmax(0,1fr)_5rem] gap-4">
+              <Field label="Cidade" error={errors.cidade?.message}>
+                <input
+                  {...register("cidade")}
+                  autoComplete="address-level2"
+                  aria-invalid={Boolean(errors.cidade)}
+                  className="input"
+                />
+              </Field>
+              <Field label="UF" error={errors.uf?.message}>
+                <input
+                  {...register("uf", { setValueAs: (v: string) => v.toUpperCase() })}
+                  maxLength={2}
+                  autoComplete="address-level1"
+                  aria-invalid={Boolean(errors.uf)}
+                  className="input uppercase"
+                />
+              </Field>
+            </div>
           </div>
-        )}
+        </Section>
 
-        {quotesLoading && <p className="text-xs text-muted-foreground">Calculando frete...</p>}
-        {quotesError && <p className="text-xs text-muted-foreground">{quotesError}</p>}
+        <Section title="Envio">
+          {quotesLoading ? (
+            <div className="flex flex-col gap-2" aria-live="polite">
+              <p className="sr-only">Calculando frete...</p>
+              <Skeleton className="h-14" />
+              <Skeleton className="h-14" />
+            </div>
+          ) : quotes.length > 0 ? (
+            <div role="radiogroup" aria-label="Opções de envio" className="flex flex-col gap-2">
+              {quotes.map((q) => (
+                <label
+                  key={q.servico}
+                  className="flex min-h-14 cursor-pointer items-center gap-3 rounded-xl border border-border px-4 py-3 text-sm transition-colors has-[:checked]:border-primary has-[:checked]:bg-primary-soft has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-ring"
+                >
+                  <input
+                    type="radio"
+                    name="servico"
+                    checked={selectedServico === q.servico}
+                    onChange={() => setSelectedServico(q.servico)}
+                    className="h-4 w-4 accent-primary"
+                  />
+                  <span className="min-w-0 flex-1">
+                    <span className="block font-medium">{q.nome}</span>
+                    <span className="text-muted-foreground">{q.prazoDias} dias úteis</span>
+                  </span>
+                  <span className="font-semibold tabular-nums">{formatBRL(q.valor)}</span>
+                </label>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              {quotesError ?? "Preencha o CEP para calcular o frete real pelos Correios."}
+            </p>
+          )}
+        </Section>
+      </div>
 
-        {submitError && <p className="text-sm text-red-600">{submitError}</p>}
+      <aside className="card p-5 lg:sticky lg:top-24">
+        <h2 className="font-semibold tracking-tight">Resumo do pedido</h2>
 
-        <button
-          type="submit"
-          disabled={submitting}
-          className="mt-2 rounded-md bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground transition hover:opacity-90 disabled:opacity-50"
-        >
-          {submitting ? "Finalizando..." : "Confirmar pedido"}
-        </button>
-      </form>
-
-      <div>
-        <h2 className="text-lg font-semibold">Resumo do pedido</h2>
-        <div className="mt-4 flex flex-col gap-2 rounded-lg border border-border p-4 text-sm">
+        <ul className="mt-4 flex flex-col gap-3">
           {items.map((item) => (
-            <div key={`${item.productId}-${item.variantId}`} className="flex justify-between">
-              <span>
+            <li key={`${item.productId}-${item.variantId}`} className="flex items-center gap-3">
+              <div className="h-12 w-12 shrink-0 overflow-hidden rounded-lg bg-muted">
+                {item.foto ? (
+                  <img src={item.foto} alt="" className="h-full w-full object-cover" />
+                ) : null}
+              </div>
+              <p className="min-w-0 flex-1 text-sm">
                 {item.quantidade}x {item.nome}
                 {item.tamanho ? ` (${item.tamanho})` : ""}
-              </span>
-              <span>{formatBRL(item.preco * item.quantidade)}</span>
-            </div>
+              </p>
+              <p className="shrink-0 text-sm font-medium tabular-nums">
+                {formatBRL(item.preco * item.quantidade)}
+              </p>
+            </li>
           ))}
-          <div className="mt-2 flex justify-between border-t border-border pt-2">
+        </ul>
+
+        <div className="mt-4 flex flex-col gap-2 border-t border-border pt-4 text-sm">
+          <div className="flex justify-between">
             <span className="text-muted-foreground">Subtotal</span>
-            <span>{formatBRL(subtotal)}</span>
+            <span className="tabular-nums">{formatBRL(subtotal)}</span>
           </div>
           <div className="flex justify-between">
             <span className="text-muted-foreground">
               Frete {quoteSelecionada ? `(${quoteSelecionada.nome})` : "(estimativa)"}
             </span>
-            <span>{formatBRL(frete)}</span>
+            <span className="tabular-nums">{formatBRL(frete)}</span>
           </div>
-          <div className="flex justify-between border-t border-border pt-2 text-base font-semibold">
+          <div className="mt-1 flex justify-between border-t border-border pt-3 text-base font-semibold">
             <span>Total</span>
-            <span>{formatBRL(subtotal + frete)}</span>
+            <span className="tabular-nums">{formatBRL(subtotal + frete)}</span>
           </div>
         </div>
-        {!quoteSelecionada && (
-          <p className="mt-2 text-xs text-muted-foreground">
-            Preencha o CEP para calcular o frete real pelos Correios.
+
+        {submitError && (
+          <p role="alert" className="mt-4 rounded-xl bg-destructive-soft px-4 py-3 text-sm text-destructive">
+            {submitError}
           </p>
         )}
-      </div>
-    </div>
-  );
-}
 
-function Field({
-  label,
-  error,
-  children,
-}: {
-  label: string;
-  error?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <label className="flex flex-col gap-1 text-sm font-medium">
-      {label}
-      {children}
-      {error && <span className="text-xs font-normal text-red-600">{error}</span>}
-    </label>
+        <button type="submit" disabled={submitting} className="btn btn-primary mt-5 h-12 w-full sm:h-12">
+          {submitting ? "Finalizando..." : "Confirmar pedido"}
+        </button>
+      </aside>
+    </form>
   );
 }
